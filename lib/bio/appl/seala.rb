@@ -7,7 +7,6 @@ require 'bio/appl/seala/taylor'
 require 'bio/appl/seala/liu'
 require 'bio/appl/seala/cuttree'
 require 'bio/appl/seala/fredrik-utilities.rb'
-require 'bio/appl/seala/fredrik-R.rb'
 
 module Bio
 

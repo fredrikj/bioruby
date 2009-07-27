@@ -55,6 +55,9 @@ module Bio
 
   # The SEquence ALignment Analyzer SEALA:
   require 'bio/appl/seala'
+  require 'bio/appl/seala/fredrik-R'
+  # This does not work right now:
+  #autoload :L, 'bio/appl/seala/fredrik-R'
 
   ## Tree
   autoload :Tree, 'bio/tree'

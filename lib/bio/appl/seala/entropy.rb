@@ -59,15 +59,16 @@ module Bio
         ans
       end
 
-      #def neumann
-      #  self.validIndices.map do |ci|
-      #    if self.profile[ci].size<1
-      #      0.0
-      #    else
-      #      L.neumann(self.profile[ci],'blosum/blosum62.qij2') / ln(20)
-      #    end
-      #  end
-      #end
+      def neumann
+        self.validIndices.map do |ci|
+          if self.profile[ci].size<1
+            0.0
+          else
+            matrix = File.join(File.dirname(`which calcd`),"blosum62.qij2")
+            L.neumann(self.profile[ci],matrix) / ln(20)
+          end
+        end
+      end
 
       def wang06(backdist=BLOSUM62freq)
         self.validIndices.map do |ci|

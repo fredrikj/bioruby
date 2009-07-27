@@ -1,9 +1,22 @@
 require 'rsruby'
 
+STDERR.puts "   (Starting R interpreter...)"
 R = RSRuby.instance # keep a constant R interpreter
 R.matrix.autoconvert(RSRuby::NO_CONVERSION)
 #R.as_dist.autoconvert(RSRuby::NO_CONVERSION)
-R.source '/home/fred/CS/neumann.r'
+
+#Dirty hack of getting some R code:
+f = Tempfile.new('neumannR')
+f.puts 'neumann <- function(obs,densityfile) {
+    densitymatrix <- as.matrix(read.table(densityfile))
+    w <- diag(obs) %*% densitymatrix
+    w <- w / sum(diag(w))
+    e <- eigen(w, only.values=TRUE)$values
+    - sum(e * log(e),na.rm=TRUE)
+}
+'
+f.flush
+R.source f.path
 R.library 'cluster'
 
 module L
