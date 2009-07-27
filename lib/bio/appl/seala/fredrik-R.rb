@@ -1,0 +1,90 @@
+require 'rsruby'
+
+R = RSRuby.instance # keep a constant R interpreter
+R.matrix.autoconvert(RSRuby::NO_CONVERSION)
+#R.as_dist.autoconvert(RSRuby::NO_CONVERSION)
+R.source '/home/fred/CS/neumann.r'
+R.library 'cluster'
+
+module L
+
+  # --- stats
+  def L.mean items
+    R.mean items
+  end
+  
+  def L.stddev items
+    R.sd items
+  end
+  
+  def L.saveplot(filename, data, params=nil)
+    if File.exists? filename
+      raise ArgumentError, "File already exists"
+    end
+    R.pdf filename 
+    R.plot(data, params)
+    R.eval_R("dev.off()")
+  end
+
+  def L.rank data
+    R.rank(data).map do |i|
+      i.to_i
+    end
+  end
+
+  def L.neumann(profile,densityfile)
+    arr = Bio::Alignment::Alphabet.map do |a|
+            if profile[a]
+              profile[a]
+            else
+              0
+            end
+          end
+    R.neumann(arr,densityfile)
+  end
+
+end
+
+class Matrix
+
+  def size
+    [self.row_size, self.column_size]
+  end
+
+  def flatten
+    self.to_a.flatten
+  end
+
+  def to_R
+    R.matrix(self.flatten.map{|i|i.to_f},
+             :nrow=>self.row_size,:ncol=>self.row_size)
+  end
+
+  def eigenfunc
+    raise ArgumentError, "Need a square matrix" unless self.square?
+    m = self.to_R
+    R.eigen(m)
+  end
+
+  def eigen
+    self.eigenfunc['vectors'].map do |i|
+      Matrix.columns([i])
+    end
+  end
+
+  def eigenval
+    self.eigenfunc['values']
+  end
+
+  def to_s
+    (0...self.row_size).map do |i|
+      self.row(i).to_a.map{|j| j.to_s.rjust(5)}.join(" ")
+    end.join("\n")
+  end
+end
+
+class Array
+  def rank
+    L.rank self
+  end
+end
