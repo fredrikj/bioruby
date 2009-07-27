@@ -53,6 +53,9 @@ module Bio
 
   autoload :Alignment,      'bio/alignment'
 
+  # The SEquence ALignment Analyzer SEALA:
+  require 'bio/appl/seala'
+
   ## Tree
   autoload :Tree, 'bio/tree'
 
