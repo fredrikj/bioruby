@@ -1,4 +1,5 @@
 require 'rsruby'
+require 'tempfile'
 
 STDERR.puts "   (Starting R interpreter...)"
 R = RSRuby.instance # keep a constant R interpreter
@@ -7,12 +8,16 @@ R.matrix.autoconvert(RSRuby::NO_CONVERSION)
 
 #Dirty hack of getting some R code:
 f = Tempfile.new('neumannR')
-f.puts 'neumann <- function(obs,densityfile) {
+f.puts 'neumann <- function(obs,densityfile,logbase=0) {
     densitymatrix <- as.matrix(read.table(densityfile))
     w <- diag(obs) %*% densitymatrix
     w <- w / sum(diag(w))
     e <- eigen(w, only.values=TRUE)$values
-    - sum(e * log(e),na.rm=TRUE)
+    if (logbase>0)
+      { factor = log(logbase)
+        - sum(e * log(e) / factor,na.rm=TRUE) }
+    else
+        - sum(e * log(e),na.rm=TRUE)
 }
 '
 f.flush
@@ -45,15 +50,10 @@ module L
     end
   end
 
-  def L.neumann(profile,densityfile)
-    arr = Bio::Alignment::Alphabet.map do |a|
-            if profile[a]
-              profile[a]
-            else
-              0
-            end
-          end
-    R.neumann(arr,densityfile)
+  def L.neumann(profile,densityfile,logbase=0)
+    arr = Bio::Alignment::Alphabet.map { |a|
+            profile[a] ? profile[a] : 0 }
+    R.neumann(arr,densityfile,logbase)
   end
 
 end

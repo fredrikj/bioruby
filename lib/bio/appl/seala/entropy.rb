@@ -132,7 +132,7 @@ def relentropy(observations, backdist, logbase=nil)
   if logbase
     factor = ln(logbase)
     alphabet.sum{ |i|
-      (!freq[i] or freq[i]==0) ? 0 : freq[i]*ln(freq[i]/backdist[i])*factor }
+      (!freq[i] or freq[i]==0) ? 0 : freq[i]*ln(freq[i]/backdist[i])/factor }
   else
     alphabet.sum{ |i|
       (!freq[i] or freq[i]==0) ? 0 : freq[i] * ln(freq[i] / backdist[i]) }
