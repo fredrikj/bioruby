@@ -126,11 +126,17 @@ def to_freq(observations,alphabet)
   end
 end
 
-def relentropy(observations, backdist)
+def relentropy(observations, backdist, logbase=nil)
   alphabet = backdist.keys
   freq = to_freq(observations, alphabet)
-  alphabet.sum{ |i|
-    (!freq[i] or freq[i]==0) ? 0 : freq[i] * log2(freq[i] / backdist[i]) }
+  if logbase
+    factor = ln(logbase)
+    alphabet.sum{ |i|
+      (!freq[i] or freq[i]==0) ? 0 : freq[i]*ln(freq[i]/backdist[i])*factor }
+  else
+    alphabet.sum{ |i|
+      (!freq[i] or freq[i]==0) ? 0 : freq[i] * ln(freq[i] / backdist[i]) }
+  end
 end
 
 def entropy(observations,alphabet,logbase=nil)
