@@ -61,11 +61,12 @@ module Bio
 
       def neumann
         self.validIndices.map do |ci|
-          if self.profile[ci].size<1
+          if (p=self.profile[ci]).size<1
             0.0
           else
             matrix = File.join(File.dirname(`which calcd`),"blosum62.qij2")
-            L.neumann(self.profile[ci],matrix) / ln(20)
+            arr = Alphabet.map { |a| p[a] ? p[a] : 0 }
+            R.neumann(arr,matrix,20)
           end
         end
       end

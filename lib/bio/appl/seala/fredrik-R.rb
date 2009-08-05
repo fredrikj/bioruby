@@ -50,12 +50,6 @@ module L
     end
   end
 
-  def L.neumann(profile,densityfile,logbase=0)
-    arr = Bio::Alignment::Alphabet.map { |a|
-            profile[a] ? profile[a] : 0 }
-    R.neumann(arr,densityfile,logbase)
-  end
-
 end
 
 class Matrix
