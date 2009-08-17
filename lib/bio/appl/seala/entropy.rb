@@ -73,7 +73,7 @@ module Bio
 
       def wang06(backdist=BLOSUM62freq)
         self.validIndices.map do |ci|
-          relentropy(self.profile[ci], backdist)
+          relentropy(self.profile[ci], backdist,20)
         end
       end
 
@@ -81,7 +81,7 @@ module Bio
         self.setweights! 3
         ans =
           self.validIndices.map do |ci|
-            relentropy(self.profile[ci], backdist)
+            relentropy(self.profile[ci], backdist,20)
           end
         self.setweights! 1
         ans
@@ -89,7 +89,7 @@ module Bio
 
       def capra07(backdist=BLOSUM62freq)
         self.validIndices.map do |ci|
-          jsd(self.profile[ci], backdist)
+          jsd(self.profile[ci], backdist,20)
         end
       end
 
@@ -97,7 +97,7 @@ module Bio
         self.setweights! 3
         ans = 
           self.validIndices.map do |ci|
-            jsd(self.profile[ci], backdist)
+            jsd(self.profile[ci], backdist,20)
           end
         self.setweights! 1
         ans
@@ -154,10 +154,10 @@ def entropy(observations,alphabet,logbase=nil)
   end
 end
 
-def jsd(observations, backdist)
+def jsd(observations, backdist,logbase=nil)
   p = to_freq(observations,backdist.keys)
   avg = backdist.hashmap { |aa, val| [val, p[aa]].mean }
-  [ relentropy(p,avg), relentropy(backdist,avg) ].mean
+  [ relentropy(p,avg,logbase), relentropy(backdist,avg,logbase) ].mean
 end
 
 def jointrelentropy(obs,backdist)
