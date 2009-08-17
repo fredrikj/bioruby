@@ -37,16 +37,28 @@ module Bio
 
     class OriginalAlignment
 
-      attr_accessor :valind
+      attr_reader :gaplimit
+
+      def gaplimit=(ratio) 
+        @valind = nil
+        @gaplimit = ratio
+      end
 
       def validIndices
         return @valind if @valind
         @valind = []
-          self[keys.first].split('').each_with_index do |ci,i|
-            if ci !~ /\.|B|X|Z/
+        (0...self[keys.first].size).each do |i|
+          if self[keys.first][i..i] !~ /\-|\.|B|X|Z/
+            if @gaplimit
+              ngaps = self.slice(i..i).values.count{|j| j=~/\-|\./}
+              if ngaps==0 or ngaps.to_f / self.size <= @gaplimit
+                @valind << i
+              end
+            else
               @valind << i
             end
           end
+        end
         @valind
       end
 
@@ -167,7 +179,7 @@ module Bio
 
       def setprofile!(assocmatrix=nil,beta=1,epsilon=0)
         param1 = Tempfile.new 'param1'
-        param1.puts "50\n0 #{epsilon.to_f} #{beta.to_f}\n"
+        param1.puts "100\n0 #{epsilon.to_f} #{beta.to_f}\n"
         param1.flush
         exec = "calcf -i #{alignfile.path} " + 
                "-w #{weightfile.path} -p #{param1.path} -t 1 "
