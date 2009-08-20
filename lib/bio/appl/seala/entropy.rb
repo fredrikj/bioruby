@@ -45,7 +45,7 @@ module Bio
 
       def shannon
         self.validIndices.map do |ci|
-          entropy(self.profile[ci], Alphabet)
+          entropy(self.profile[ci], Alphabet,20)
         end
       end
 
@@ -53,7 +53,7 @@ module Bio
         self.setweights! 3
         ans = 
           self.validIndices.map do |ci|
-            entropy(self.profile[ci], Alphabet)
+            entropy(self.profile[ci], Alphabet,20)
           end
         self.setweights! 1
         ans
