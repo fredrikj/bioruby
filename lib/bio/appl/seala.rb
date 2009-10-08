@@ -11,23 +11,19 @@ require 'bio/appl/seala/fredrik-utilities.rb'
 module Bio
 
   class Sequence
-    class AA < String
+    def aalength
+      @aalength ||= self.gsub(/[^#{Bio::Alignment::Alphabet}]/,'').size
+    end
 
-      def aalength
-        @aalength ||= self.gsub(/[^#{Bio::Alignment::Alphabet}]/,'').size
-      end
-
-      def ident(other)
-        a = Bio::Alignment::Alphabet
-        s = self.split('').zip(other.split('')).sum { |i|
-              if i[0] && i[1] && (i[0]+i[1])=~/[#{a}]{2}/ && i[0]==i[1]
-                1
-              else
-                0
-              end }
-        s.to_f / [self.aalength, other.aalength].max
-      end
-
+    def ident(other)
+      a = Bio::Alignment::Alphabet
+      s = self.split('').zip(other.split('')).sum { |i|
+            if i[0] && i[1] && (i[0]+i[1])=~/[#{a}]{2}/ && i[0]==i[1]
+              1
+            else
+              0
+            end }
+      s.to_f / [self.aalength, other.aalength].max
     end
   end
 
@@ -38,6 +34,7 @@ module Bio
     class OriginalAlignment
 
       attr_reader :gaplimit
+      attr_accessor :valind
 
       def gaplimit=(ratio) 
         @valind = nil
@@ -60,6 +57,26 @@ module Bio
           end
         end
         @valind
+      end
+
+      # This method checks BXZ in any sequence
+      def validIndices2
+        return @valind2 if @valind2
+        @valind2 = []
+        (0...self[keys.first].size).each do |i|
+          if self[keys.first][i..i] !~ /\-|\./ and 
+             self.slice(i..i).values.join !~ /[BXZ]/
+            if @gaplimit
+              ngaps = self.slice(i..i).values.count{|j| j=~/\-|\./}
+              if ngaps==0 or ngaps.to_f / self.size <= @gaplimit
+                @valind2 << i
+              end
+            else
+              @valind2 << i
+            end
+          end
+        end
+        @valind2
       end
 
       def distmatrix
