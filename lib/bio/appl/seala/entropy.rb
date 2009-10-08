@@ -44,7 +44,7 @@ module Bio
       end
 
       def shannon
-        self.validIndices.map do |ci|
+        self.valind.map do |ci|
           entropy(self.profile[ci], Alphabet,20)
         end
       end
@@ -52,7 +52,7 @@ module Bio
       def shannonw
         self.setweights! 3
         ans = 
-          self.validIndices.map do |ci|
+          self.valind.map do |ci|
             entropy(self.profile[ci], Alphabet,20)
           end
         self.setweights! 1
@@ -60,7 +60,7 @@ module Bio
       end
 
       def neumann
-        self.validIndices.map do |ci|
+        self.valind.map do |ci|
           if (p=self.profile[ci]).size<1
             0.0
           else
@@ -72,7 +72,7 @@ module Bio
       end
 
       def wang06(backdist=BLOSUM62freq)
-        self.validIndices.map do |ci|
+        self.valind.map do |ci|
           relentropy(self.profile[ci], backdist,20)
         end
       end
@@ -80,7 +80,7 @@ module Bio
       def wang06w(backdist=BLOSUM62freq)
         self.setweights! 3
         ans =
-          self.validIndices.map do |ci|
+          self.valind.map do |ci|
             relentropy(self.profile[ci], backdist,20)
           end
         self.setweights! 1
@@ -88,7 +88,7 @@ module Bio
       end
 
       def capra07(backdist=BLOSUM62freq)
-        self.validIndices.map do |ci|
+        self.valind.map do |ci|
           jsd(self.profile[ci], backdist,20)
         end
       end
@@ -96,7 +96,7 @@ module Bio
       def capra07w(backdist=BLOSUM62freq)
         self.setweights! 3
         ans = 
-          self.validIndices.map do |ci|
+          self.valind.map do |ci|
             jsd(self.profile[ci], backdist,20)
           end
         self.setweights! 1
@@ -105,7 +105,7 @@ module Bio
 
       def mihalek07(backdist=nil)
         backdist ||= readMihalek
-        self.validIndices.map do |ci|
+        self.valind.map do |ci|
           jointrelentropy(self.slice(ci..ci).values, backdist)
         end
       end

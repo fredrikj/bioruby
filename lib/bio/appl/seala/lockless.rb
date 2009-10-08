@@ -140,7 +140,7 @@ module Bio
         #puts "Average #{(values.count('A')/ncols).round}/#{n} times " +
         #     "(probability #{msaprob['A']})."
         ans =
-          self.validIndices.map do |i|
+          self.valind.map do |i|
             column = self.slice(i..i).values.join
             if (column.count('.').to_f / column.size) <= 0.5 #Maximum 50% gaps
               #pbar.set(i)

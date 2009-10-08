@@ -73,7 +73,7 @@ module Bio
         )
 
       def taylor86
-        self.validIndices.map do |ci|
+        self.valind.map do |ci|
           obs = self.slice(ci..ci).values.uniq.
                 reject{ |i| !Alphabet.member? i}.join
           memberof = Taylorsets.find_all{|i| i =~ /([#{obs}].*){#{obs.size}}/}

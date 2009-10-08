@@ -41,42 +41,28 @@ module Bio
         @gaplimit = ratio
       end
 
-      def validIndices
-        return @valind if @valind
-        @valind = []
-        (0...self[keys.first].size).each do |i|
-          if self[keys.first][i..i] !~ /\-|\.|B|X|Z/
-            if @gaplimit
-              ngaps = self.slice(i..i).values.count{|j| j=~/\-|\./}
-              if ngaps==0 or ngaps.to_f / self.size <= @gaplimit
-                @valind << i
-              end
-            else
-              @valind << i
-            end
-          end
-        end
-        @valind
+      def sealaindex
+        @sealaindex ||= (0...self[keys.first].size).reject { |i|
+                          self[keys.first][i..i] =~ /[\.\-]/ }
       end
 
-      # This method checks BXZ in any sequence
-      def validIndices2
-        return @valind2 if @valind2
-        @valind2 = []
-        (0...self[keys.first].size).each do |i|
-          if self[keys.first][i..i] !~ /\-|\./ and 
-             self.slice(i..i).values.join !~ /[BXZ]/
-            if @gaplimit
-              ngaps = self.slice(i..i).values.count{|j| j=~/\-|\./}
-              if ngaps==0 or ngaps.to_f / self.size <= @gaplimit
-                @valind2 << i
-              end
-            else
-              @valind2 << i
-            end
-          end
-        end
-        @valind2
+      def gapindex
+        @gapindex ||= 
+          (0...self[keys.first].size).reject { |i|
+            ngaps = self.slice(i..i).values.count{|j| j=~/\-|\./}
+            ngaps.to_f / self.size > @gaplimit }
+      end
+
+      def bxzindex
+        @bxzindex ||= (0...self[keys.first].size).reject { |i|
+                        self.slice(i..i).values.join =~ /[BXZ]/}
+      end
+
+      def valind
+        @valind ||=
+          (             Set.new(sealaindex).
+           intersection(Set.new(gapindex)).
+           intersection(Set.new(bxzindex))).to_a.sort
       end
 
       def distmatrix
@@ -116,7 +102,7 @@ module Bio
                               end
                      cache[group2] ||= begin
                                          al = self.subalignment(group2)
-                                         al.valind = self.validIndices
+                                         al.valind = self.valind
                                          eval "al.#{method}"
                                        end
                    end.map{|i| i.to_f / g.size}
@@ -252,7 +238,7 @@ Pro            Y       Y
         #s = open('zvelebil').read.nsplit.reject{|i|i=~/#/}.inject({}) { |h,line|
         s = s.nsplit.reject{|i|i=~/#/}.inject({}) { |h,line|
               h[line.split.first.oneLetterAA] = line[5..-1]; h }
-        self.validIndices.map do |ci|
+        self.valind.map do |ci|
           mem = self.slice(ci..ci).values.uniq.reject{ |i| !Alphabet.member? i}
           if (n=mem.size) == 1
             1
@@ -379,9 +365,17 @@ Pro            Y       Y
         outfile = Tempfile.new('rate4site')
         `rate4site -s #{alignfile.path} -o #{outfile.path} 2> /dev/null`
         output = outfile.grep(/^[^#]/).map{|line| line.chop}.delete_if{|i| i==''}
-        output.map{ |line| 
-          line.split[1]=~/B|X|Z/ ? nil : line.split[2].to_f
-          }.compact
+        arr = output.map{ |line| line.split[2].to_f }
+        if arr.size != self.sealaindex.size
+          raise "Rate4site output size (#{arr.size}) does not match" + 
+                " sealaindex size (#{sealaindex.size}) "
+        end
+        allarr = []
+        self.sealaindex.zip(arr).map{|i,s| allarr[i] = s}
+        self.valind.map{|i| allarr[i]}
+        #output.map{ |line| 
+        #  line.split[1]=~/B|X|Z/ ? nil : line.split[2].to_f
+        #  }.compact
       end
 
       # seala
@@ -396,15 +390,19 @@ Pro            Y       Y
           "-w #{weightfile.path} " +
           "-f #{freqfile.path} -p #{param2.path} -m #{scorenum} " +
           "-t 2 -c #{matrix} -s #{self.keys.first}"
-        output = `#{cons}`
+        output = `#{cons}`.split("\n")
         #puts output,'Press return' ; gets
-        open('/tmp/cons','w'){|f| f.puts output}
-        if output.nsplit.size<2
+        #open('/tmp/cons','w'){|f| f.puts output}
+        if output.size<2
           raise "#{output}"
         end
-        output.split("\n")[1..-1].map { |line|
-          line=~/(B|X|Z)/ ? nil : line.split(",").last.to_f
-        }.compact
+        arr = output[1..-1].map{ |line| line.split(',').last.to_f }
+        if arr.size != self.sealaindex.size
+          raise "SEALA output size does not match sealaindex size"
+        end
+        allarr = []
+        self.sealaindex.zip(arr).map{|i,s| allarr[i] = s}
+        self.valind.map{|i| allarr[i]}
       end
 
       # mihalek04seala

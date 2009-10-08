@@ -29,7 +29,7 @@ module Bio
 '
       def liu08
         blosum = Blosum.new Liu08matrix
-        self.validIndices.map do |ci|
+        self.valind.map do |ci|
           originalcolumn = self.slice(ci..ci).values
           column = originalcolumn.reject{ |i| !Alphabet.member? i}
           if column.size*2 < originalcolumn.size

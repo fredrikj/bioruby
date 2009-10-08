@@ -8,7 +8,7 @@ module Bio
         blosum = Blosum.new open(File.join(File.dirname(`which calcd`),
                                            "blosum62.bla"))
         blosum.karlin!
-        self.validIndices.map do |ci|
+        self.valind.map do |ci|
           originalcolumn = self.slice(ci..ci).values
           column = originalcolumn.reject{|i| i=='.'}
           if column.size*2 < originalcolumn.size
@@ -26,7 +26,7 @@ module Bio
         blosum = Blosum.new open(File.join(File.dirname(`which calcd`),
                                            "blosum62.bla"))
         aa = blosum.keys[0..-5].dup
-        self.validIndices.map do |ci|
+        self.valind.map do |ci|
           originalcolumn = self.slice(ci..ci).values
           column = originalcolumn.reject{|i| i=~/[.BXZ]/}
           if column.size*2 < originalcolumn.size
