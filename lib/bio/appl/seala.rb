@@ -92,7 +92,6 @@ module Bio
 
       def phylogeny
         return @phylogeny if @phylogeny
-        L.mean [1] #Just a hack to load R
         @phylogeny =
           if self.size<2
             nil
