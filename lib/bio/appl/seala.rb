@@ -366,16 +366,17 @@ Pro            Y       Y
         `rate4site -s #{alignfile.path} -o #{outfile.path} 2> /dev/null`
         output = outfile.grep(/^[^#]/).map{|line| line.chop}.delete_if{|i| i==''}
         arr = output.map{ |line| line.split[2].to_f }
-        if arr.size != self.sealaindex.size
+        r4sindex = self.sealaindex.reject{|i| self[keys.first][i..i]=~/[BXZ]/}
+        if arr.size==0
+          raise "Rate4site gave no output"
+        end
+        if arr.size != r4sindex.size
           raise "Rate4site output size (#{arr.size}) does not match" + 
-                " sealaindex size (#{sealaindex.size}) "
+                " r4sindex size (#{r4sindex.size}) "
         end
         allarr = []
-        self.sealaindex.zip(arr).map{|i,s| allarr[i] = s}
+        r4sindex.zip(arr).map{|i,s| allarr[i] = s}
         self.valind.map{|i| allarr[i]}
-        #output.map{ |line| 
-        #  line.split[1]=~/B|X|Z/ ? nil : line.split[2].to_f
-        #  }.compact
       end
 
       # seala
