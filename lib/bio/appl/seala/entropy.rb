@@ -24,17 +24,6 @@ module Bio
          'Y' => 32/1000,
          'V' => 73/1000}
 
-      def pdist
-        return @pdist if @pdist
-        str = self.values.join.split('').reject{|i| !Alphabet.member? i}
-        strsize = str.size
-        @pdist = {}
-        Alphabet.each do |a|
-          @pdist[a] = Rational(str.count(a), strsize)
-        end
-        @pdist
-      end
-
       def mihalek04
         self.evoltrace 'shannon'
       end
@@ -43,24 +32,19 @@ module Bio
         self.evoltrace 'neumann'
       end
 
-      def shannon
-        self.valind.map do |ci|
-          entropy(self.profile[ci], Alphabet,20)
+      def shannon(w=1)
+        setweights! w
+        valind.map do |ci|
+          entropy(self.profile[ci], Alphabet, 20)
         end
       end
 
       def shannonw
-        self.setweights! 3
-        ans = 
-          self.valind.map do |ci|
-            entropy(self.profile[ci], Alphabet,20)
-          end
-        self.setweights! 1
-        ans
+        shannon 3
       end
 
       def neumann
-        self.valind.map do |ci|
+        valind.map do |ci|
           if (p=self.profile[ci]).size<1
             0.0
           else
@@ -71,41 +55,31 @@ module Bio
         end
       end
 
-      def wang06(backdist=BLOSUM62freq)
-        self.valind.map do |ci|
+      def wang06(w=1, backdist=BLOSUM62freq)
+        setweights! w
+        valind.map do |ci|
           relentropy(self.profile[ci], backdist,20)
         end
       end
 
       def wang06w(backdist=BLOSUM62freq)
-        self.setweights! 3
-        ans =
-          self.valind.map do |ci|
-            relentropy(self.profile[ci], backdist,20)
-          end
-        self.setweights! 1
-        ans
+        wang06 3
       end
 
-      def capra07(backdist=BLOSUM62freq)
-        self.valind.map do |ci|
+      def capra07(w=1, backdist=BLOSUM62freq)
+        setweights! w
+        valind.map do |ci|
           jsd(self.profile[ci], backdist,20)
         end
       end
 
       def capra07w(backdist=BLOSUM62freq)
-        self.setweights! 3
-        ans = 
-          self.valind.map do |ci|
-            jsd(self.profile[ci], backdist,20)
-          end
-        self.setweights! 1
-        ans
+        capra07 3
       end
 
       def mihalek07(backdist=nil)
         backdist ||= readMihalek
-        self.valind.map do |ci|
+        valind.map do |ci|
           jointrelentropy(self.slice(ci..ci).values, backdist)
         end
       end

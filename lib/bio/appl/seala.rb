@@ -33,11 +33,16 @@ module Bio
 
     class OriginalAlignment
 
-      attr_reader :gaplimit
+      attr_reader :gaplimit,:wmethod
       attr_accessor :valind
+
+      #-------------------------------------------------------------------------
+      # Methods to check which sites are "valid"
+      #-------------------------------------------------------------------------
 
       def gaplimit=(ratio) 
         @valind = nil
+        @gapindex = nil
         @gaplimit = ratio
       end
 
@@ -65,20 +70,107 @@ module Bio
            intersection(Set.new(bxzindex))).to_a.sort
       end
 
-      def distmatrix
-        return @distmatrix if @distmatrix
-        tmp = 
-          self.keys.map do |seq1|
-            self.keys.map do |seq2|
-              (1 - self[seq1].ident(self[seq2]))
-            end
+      #-------------------------------------------------------------------------
+      # File administration
+      #-------------------------------------------------------------------------
+
+      def alignfile
+        if !@alignfile
+          @alignfile = Tempfile.new('align')
+          @alignfile.puts self.output_clustal
+          @alignfile.flush
+        end
+        @alignfile
+      end
+
+      def weightfile
+        setweights! if !@weightfile
+        @weightfile
+      end
+
+      def w
+        @w ||= setweights!
+      end
+
+      def freqfile
+        setprofile! if !@freqfile
+        @freqfile
+      end
+
+      def profile
+        @profile ||= setprofile!
+      end
+
+      def wmethod(w=1)
+        unless @wmethod
+          @wmethod = w
+          setweights! @wmethod
+        end
+        @wmethod
+      end
+
+      def setweights!(wmethod=1)
+        if !@wmethod or @wmethod!=wmethod
+          @wmethod = wmethod
+          @w = {}
+          @profile = nil
+          @freqfile = nil
+          str = `calcw -i #{alignfile.path} -m #{@wmethod}`
+          str.split("\n").each do |line|
+            @w[ line.split[1] ] = line.split.last.to_f
           end
-        @distmatrix = Matrix.rows tmp
+          @weightfile = Tempfile.new('weight')
+          (0...self.keys.size).each do |i|
+            @weightfile.puts [ i+1, keys[i], @w[keys[i]] ].join("\t")
+          end
+          @weightfile.flush
+        end
+        @w
+      end
+
+      def setprofile!(assocmatrix=nil,beta=1,epsilon=0)
+        param1 = Tempfile.new 'param1'
+        param1.puts "100\n0 #{epsilon.to_f} #{beta.to_f}\n"
+        param1.flush
+        exec = "calcf -i #{alignfile.path} " + 
+               "-w #{weightfile.path} -p #{param1.path} -t 1 "
+        if assocmatrix
+          raise "Can't find matrix file" if !File.exists? assocmatrix
+          exec += "-c #{assocmatrix} -e "
+        end
+        output = `#{exec}`
+        #puts '---',output,'---'
+        @freqfile = Tempfile.new 'freq'
+        @freqfile.puts output
+        @freqfile.flush
+        aa,*lines = output.split("\n")
+        aa = aa.split[1..-1]
+        @profile = []
+        lines.each do |line|
+          col,aai,p = line.split
+          col = col.to_i
+          aai = aai.to_i
+          p   = p.to_f
+          @profile[col] ||= Hash.new(0)
+          @profile[col][aa[aai]] = p if p!=0
+        end
+        @profile
+      end
+
+
+      #-------------------------------------------------------------------------
+      # Phylogeny methods
+      #-------------------------------------------------------------------------
+
+      def distmatrix
+        @distmatrix ||=
+          Matrix.rows(self.keys.map { |seq1|
+                        self.keys.map { |seq2|
+                          (1 - self[seq1].ident(self[seq2]))}})
       end
 
       def phylogeny
-        return @phylogeny if @phylogeny
-        @phylogeny =
+        @phylogeny ||=
           if self.size<2
             nil
           elsif self.size==2
@@ -123,90 +215,10 @@ module Bio
         al
       end
 
-      def alignfile
-        if !@alignfile
-          @alignfile = Tempfile.new('align')
-          @alignfile.puts self.output_clustal
-          @alignfile.flush
-        end
-        @alignfile
-      end
 
-      def weightfile
-        if !defined? @weightfile
-          tmp = self.w
-          updateweightfile
-        end
-        @weightfile
-      end
-
-      def freqfile
-        if !@freqfile
-          setprofile!
-        end
-        @freqfile
-      end
-
-      def updateweightfile
-        return if !defined? @w
-        @weightfile = Tempfile.new('weight')
-        (0...self.keys.size).each do |i|
-          @weightfile.puts [i+1,keys[i],@w[keys[i]]].join("\t")
-        end
-        @weightfile.flush
-        @weightfile
-      end
-
-      def w
-        setweights! if !@w
-        @w
-      end
-
-      def profile
-        setprofile! if !@profile
-        @profile
-      end
-
-      def setweights!(wmethod=1)
-        @w = {}
-        @profile = nil
-        str = `calcw -i #{alignfile.path} -m #{wmethod}`
-        str.split("\n").each do |line|
-          @w[line.split[1]] = line.split.last.to_f
-        end
-        updateweightfile
-        setprofile!
-        @w
-      end
-
-      def setprofile!(assocmatrix=nil,beta=1,epsilon=0)
-        param1 = Tempfile.new 'param1'
-        param1.puts "100\n0 #{epsilon.to_f} #{beta.to_f}\n"
-        param1.flush
-        exec = "calcf -i #{alignfile.path} " + 
-               "-w #{weightfile.path} -p #{param1.path} -t 1 "
-        if assocmatrix
-          raise "Can't find matrix file" if !File.exists? assocmatrix
-          exec += "-c #{assocmatrix} -e "
-        end
-        output = `#{exec}`
-        #puts '---',output,'---'
-        @freqfile = Tempfile.new 'freq'
-        @freqfile.puts output
-        @freqfile.flush
-        aa,*lines = output.split("\n")
-        aa = aa.split[1..-1]
-        @profile = []
-        lines.each do |line|
-          col,aai,p = line.split
-          col = col.to_i
-          aai = aai.to_i
-          p   = p.to_f
-          @profile[col] ||= Hash.new(0)
-          @profile[col][aa[aai]] = p if p!=0
-        end
-        @profile
-      end
+      #-------------------------------------------------------------------------
+      # Conservation / variation methods
+      #-------------------------------------------------------------------------
 
       # Zvelebil counts properties
       def zvelebil87
@@ -260,10 +272,7 @@ Pro            Y       Y
       end
 
       def wu70w
-        self.setweights! 3
-        ans = seala 1
-        self.setweights! 1
-        ans
+        seala(1,3)
       end
 
       # Pei made the AL2CO software which has several methods though...
@@ -277,17 +286,11 @@ Pro            Y       Y
 
       # Pei made the AL2CO software which has several methods though...
       def pei01varw
-        self.setweights! 3
-        ans = seala 2
-        self.setweights! 1
-        ans
+        seala(2,3)
       end
 
       def pei01spw
-        self.setweights! 3
-        ans = seala 9
-        self.setweights! 1
-        ans
+        seala(9,3)
       end
 
       # Sander and Schneider introduced the Shannon entropy
@@ -327,10 +330,7 @@ Pro            Y       Y
 
       # Valdar and Thornton used a Sum-of-Pairs score.
       def valdar01
-        self.setweights! 2
-        ans = seala 8
-        self.setweights! 1
-        ans
+        seala(8,2)
       end
 
       # Valdar, in his review article, introduces a tricky score.
@@ -343,45 +343,43 @@ Pro            Y       Y
 
       # Caffrey introduced the vonNeumann entropy.
       def caffrey04
-        seala(11,'qij')
+        seala(11, 1, 'qij')
       end
 
       # Caffrey introduced the vonNeumann entropy.
       def caffrey04w
-        self.setweights! 3
-        ans = seala(11,'qij')
-        self.setweights! 1
-        ans
+        seala(11, 3, 'qij')
       end
+
+
+      #-------------------------------------------------------------------------
+      # Interfaces to external programs
+      #-------------------------------------------------------------------------
 
       # rate4site
       def mayrose04
         if `which rate4site`.size==0
           raise "Rate4site not found"
         end
-        alignfile = Tempfile.new('align')
-        alignfile.puts self.output_clustal
-        alignfile.flush
         outfile = Tempfile.new('rate4site')
         `rate4site -s #{alignfile.path} -o #{outfile.path} 2> /dev/null`
         output = outfile.grep(/^[^#]/).map{|line| line.chop}.delete_if{|i| i==''}
-        arr = output.map{ |line| line.split[2].to_f }
-        r4sindex = self.sealaindex.reject{|i| self[keys.first][i..i]=~/[BXZ]/}
-        if arr.size==0
+        if output.size==0
           raise "Rate4site gave no output"
         end
+        arr = output.map{ |line| line.split[2].to_f }
+        r4sindex = sealaindex.reject{|i| self[keys.first][i..i]=~/[BXZ]/}
         if arr.size != r4sindex.size
           raise "Rate4site output size (#{arr.size}) does not match" + 
                 " r4sindex size (#{r4sindex.size}) "
         end
-        allarr = []
-        r4sindex.zip(arr).map{|i,s| allarr[i] = s}
-        self.valind.map{|i| allarr[i]}
+        allarr = r4sindex.zip(arr).inject([]) { |ai,(i,s)| ai[i] = s; ai}
+        valind.map{|i| allarr[i]}
       end
 
-      # seala
       # An interface to the SEALA software
-      def seala(scorenum=1,suffix='bla')
+      def seala(scorenum=1, w=1, suffix='bla')
+        setweights! w 
         param2 = Tempfile.new 'param2'
         param2.puts "50 50\n1 1 1\n"
         param2.flush
@@ -401,9 +399,8 @@ Pro            Y       Y
         if arr.size != self.sealaindex.size
           raise "SEALA output size does not match sealaindex size"
         end
-        allarr = []
-        self.sealaindex.zip(arr).map{|i,s| allarr[i] = s}
-        self.valind.map{|i| allarr[i]}
+        allarr = sealaindex.zip(arr).inject([]) { |ai,(i,s)| ai[i] = s; ai}
+        valind.map{|i| allarr[i]}
       end
 
       # mihalek04seala
@@ -414,10 +411,6 @@ Pro            Y       Y
           "-p param3 -fp param4 -w 1 -value 2 -m 5 " + 
           "-t 2 -s #{self.keys.first}"
           #"-t 2 -s #{self.keys.first} -c blosum/blosum62.bla -e"
-        ##################
-        #puts exec
-        #gets
-        ##################
         output = `#{exec}`
         n = self.size
         output.split("\n").map { |line|

@@ -27,9 +27,10 @@ module Bio
 3  3  3  2  3  3  3  2  6  3  3  3  3  7  2  3  3  6  10 3
 6  2  2  2  4  3  3  2  2  9  7  3  7  4  3  3  6  2  4  10
 '
-      def liu08
+      def liu08(w=1)
         blosum = Blosum.new Liu08matrix
-        self.valind.map do |ci|
+        setweights! w
+        valind.map do |ci|
           originalcolumn = self.slice(ci..ci).values
           column = originalcolumn.reject{ |i| !Alphabet.member? i}
           if column.size*2 < originalcolumn.size
@@ -44,10 +45,7 @@ module Bio
       end
 
       def liu08w
-        self.setweights! 3
-        ans = self.liu08
-        self.setweights! 1
-        ans
+        liu08 3
       end
 
     end
