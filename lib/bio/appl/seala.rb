@@ -247,7 +247,6 @@ Pro            Y       Y
 #Glx        Y            
 #Gap  Y Y Y Y Y Y Y Y Y Y
 #Unk  Y Y Y Y Y Y Y Y Y Y"
-        #s = open('zvelebil').read.nsplit.reject{|i|i=~/#/}.inject({}) { |h,line|
         s = s.nsplit.reject{|i|i=~/#/}.inject({}) { |h,line|
               h[line.split.first.oneLetterAA] = line[5..-1]; h }
         self.valind.map do |ci|
@@ -362,10 +361,11 @@ Pro            Y       Y
           raise "Rate4site not found"
         end
         outfile = Tempfile.new('rate4site')
-        `rate4site -s #{alignfile.path} -o #{outfile.path} 2> /dev/null`
+        errfile = Tempfile.new('rate4site')
+        `rate4site -s #{alignfile.path} -o #{outfile.path} 2> #{errfile.path}`
         output = outfile.grep(/^[^#]/).map{|line| line.chop}.delete_if{|i| i==''}
         if output.size==0
-          raise "Rate4site gave no output"
+          raise errfile.read.split("\n")[2..-1].join("\n")
         end
         arr = output.map{ |line| line.split[2].to_f }
         r4sindex = sealaindex.reject{|i| self[keys.first][i..i]=~/[BXZ]/}
