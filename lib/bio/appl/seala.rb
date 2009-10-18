@@ -33,7 +33,7 @@ module Bio
 
     class OriginalAlignment
 
-      attr_reader :gaplimit,:wmethod
+      attr_reader :wmethod
       attr_accessor :valind
 
       #-------------------------------------------------------------------------
@@ -45,6 +45,10 @@ module Bio
         @gapindex = nil
         @gaplimit = ratio
       end
+       
+      def gaplimit
+        @gaplimit ||= 1
+      end
 
       def sealaindex
         @sealaindex ||= (0...self[keys.first].size).reject { |i|
@@ -55,7 +59,7 @@ module Bio
         @gapindex ||= 
           (0...self[keys.first].size).reject { |i|
             ngaps = self.slice(i..i).values.count{|j| j=~/\-|\./}
-            ngaps.to_f / self.size > @gaplimit }
+            ngaps.to_f / self.size > gaplimit }
       end
 
       def bxzindex
