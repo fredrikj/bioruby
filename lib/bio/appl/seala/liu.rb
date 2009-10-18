@@ -30,18 +30,19 @@ module Bio
       def liu08(w=1)
         blosum = Blosum.new Liu08matrix
         setweights! w
-        valind.map do |ci|
-          originalcolumn = self.slice(ci..ci).values
-          column = originalcolumn.reject{ |i| !Alphabet.member? i}
-          if column.size*2 < originalcolumn.size
-            'nan'
-          else
-            n = column.size
-            commonAA = column.mostcommon
-            Alphabet.sum{|i|
-              self.profile[ci][i] * blosum[commonAA][i] }
+        @score =
+          valind.map do |ci|
+            originalcolumn = self.slice(ci..ci).values
+            column = originalcolumn.reject{ |i| !Alphabet.member? i}
+            if column.size*2 < originalcolumn.size
+              'nan'
+            else
+              n = column.size
+              commonAA = column.mostcommon
+              Alphabet.sum{|i|
+                self.profile[ci][i] * blosum[commonAA][i] }
+            end
           end
-        end
       end
 
       def liu08w

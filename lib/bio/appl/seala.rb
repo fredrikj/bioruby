@@ -182,6 +182,7 @@ module Bio
       end
 
       def evoltrace(method = 'shannon')
+        L.mean 1 # Just a hack to load R
         cache = Hash.new
         result =
           (1...self.size).sum do |node|
@@ -199,7 +200,7 @@ module Bio
                                        end
                    end.map{|i| i.to_f / g.size}
           end
-        result.map{|i| i + 1}
+        @score = result.map{|i| i + 1}
         #result.map{|i| i.to_f / (self.size-1)}
       end
 
@@ -249,20 +250,21 @@ Pro            Y       Y
 #Unk  Y Y Y Y Y Y Y Y Y Y"
         s = s.nsplit.reject{|i|i=~/#/}.inject({}) { |h,line|
               h[line.split.first.oneLetterAA] = line[5..-1]; h }
-        self.valind.map do |ci|
-          mem = self.slice(ci..ci).values.uniq.reject{ |i| !Alphabet.member? i}
-          if (n=mem.size) == 1
-            1
-          else
-            score = 0.9
-            props = mem.map{|i| s[i].indices 'Y'}
-            ind = props.flatten.uniq
-            ind.each do |i|
-              score -= 0.1 unless (props.count{|pi| pi.member? i} == n)
+        @score = 
+          valind.map do |ci|
+            mem = self.slice(ci..ci).values.uniq.reject{ |i| !Alphabet.member? i}
+            if (n=mem.size) == 1
+              1
+            else
+              score = 0.9
+              props = mem.map{|i| s[i].indices 'Y'}
+              ind = props.flatten.uniq
+              ind.each do |i|
+                score -= 0.1 unless (props.count{|pi| pi.member? i} == n)
+              end
+              score
             end
-            score
           end
-        end
       end
 
       # Wu&Kabat is the simplest of scores.
@@ -374,7 +376,7 @@ Pro            Y       Y
                 " r4sindex size (#{r4sindex.size}) "
         end
         allarr = r4sindex.zip(arr).inject([]) { |ai,(i,s)| ai[i] = s; ai}
-        valind.map{|i| allarr[i]}
+        @score = valind.map{|i| allarr[i]}
       end
 
       # An interface to the SEALA software
@@ -390,7 +392,6 @@ Pro            Y       Y
           "-f #{freqfile.path} -p #{param2.path} -m #{scorenum} " +
           "-t 2 -c #{matrix} -s #{self.keys.first}"
         output = `#{cons}`.split("\n")
-        #puts output,'Press return' ; gets
         #open('/tmp/cons','w'){|f| f.puts output}
         if output.size<2
           raise "#{output}"
@@ -400,30 +401,46 @@ Pro            Y       Y
           raise "SEALA output size does not match sealaindex size"
         end
         allarr = sealaindex.zip(arr).inject([]) { |ai,(i,s)| ai[i] = s; ai}
-        valind.map{|i| allarr[i]}
+        @score = valind.map{|i| allarr[i]}
+      end
+
+      def sealaoutput
+        if @score
+          "Calculate Site Degree Result\n" +
+          (1..sealaindex.size).zip(sealaindex).map do |i,si|
+            score = if (vi=valind.indices{|ii| ii==si}).size>0
+                      "%.2f"%(@score[vi.first])
+                    else
+                      "NaN"
+                    end
+            [i , self[keys.first][(si..si)] , score ].join(',')
+          end.join("\n")
+        else
+          nil
+        end
       end
 
       # mihalek04seala
       # EThybrid - Evolutionary trace with shannon entropy
-      def mihalek04seala
-        exec = 
-          "calci -i #{alignfile.path} " +
-          "-p param3 -fp param4 -w 1 -value 2 -m 5 " + 
-          "-t 2 -s #{self.keys.first}"
-          #"-t 2 -s #{self.keys.first} -c blosum/blosum62.bla -e"
-        output = `#{exec}`
-        n = self.size
-        output.split("\n").map { |line|
-          if line=~/(B|X|Z)/ 
-            nil 
-          else 
-            line.split("\t").last.to_f
-          end
-        }.compact.map{ |i|
-          if i==100 then 'NaN'
-          else i end } # (i-1).to_f / (n-1) end } # We normalize the score
-      end
-
+      #def mihalek04seala
+      #  exec = 
+      #    "calci -i #{alignfile.path} " +
+      #    "-p param3 -fp param4 -w 1 -value 2 -m 5 " + 
+      #    "-t 2 -s #{self.keys.first}"
+      #    #"-t 2 -s #{self.keys.first} -c blosum/blosum62.bla -e"
+      #  output = `#{exec}`
+      #  n = self.size
+      #  output.split("\n").map { |line|
+      #    if line=~/(B|X|Z)/ 
+      #      nil 
+      #    else 
+      #      line.split("\t").last.to_f
+      #    end
+      #  }.compact.map{ |i|
+      #    if i==100 then 'NaN'
+      #    else i end } # (i-1).to_f / (n-1) end } # We normalize the score
+      #end
+      
     end
   end
 end

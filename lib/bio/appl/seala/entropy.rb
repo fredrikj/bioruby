@@ -34,9 +34,9 @@ module Bio
 
       def shannon(w=1)
         setweights! w
-        valind.map do |ci|
-          entropy(self.profile[ci], Alphabet, 20)
-        end
+        @score = valind.map do |ci|
+                   entropy(self.profile[ci], Alphabet, 20)
+                 end
       end
 
       def shannonw
@@ -44,22 +44,23 @@ module Bio
       end
 
       def neumann
-        valind.map do |ci|
-          if (p=self.profile[ci]).size<1
-            0.0
-          else
-            matrix = File.join(File.dirname(`which calcd`),"blosum62.qij2")
-            arr = Alphabet.map { |a| p[a] ? p[a] : 0 }
-            R.neumann(arr,matrix,20)
+        @score = 
+          valind.map do |ci|
+            if (p=self.profile[ci]).size<1
+              0.0
+            else
+              matrix = File.join(File.dirname(`which calcd`),"blosum62.qij2")
+              arr = Alphabet.map { |a| p[a] ? p[a] : 0 }
+              R.neumann(arr,matrix,20)
+            end
           end
-        end
       end
 
       def wang06(w=1, backdist=BLOSUM62freq)
         setweights! w
-        valind.map do |ci|
-          relentropy(self.profile[ci], backdist,20)
-        end
+        @score = valind.map do |ci|
+                   relentropy(self.profile[ci], backdist,20)
+                 end
       end
 
       def wang06w(backdist=BLOSUM62freq)
@@ -68,9 +69,9 @@ module Bio
 
       def capra07(w=1, backdist=BLOSUM62freq)
         setweights! w
-        valind.map do |ci|
-          jsd(self.profile[ci], backdist,20)
-        end
+        @score = valind.map do |ci|
+                   jsd(self.profile[ci], backdist,20)
+                 end
       end
 
       def capra07w(backdist=BLOSUM62freq)
@@ -79,9 +80,9 @@ module Bio
 
       def mihalek07(backdist=nil)
         backdist ||= readMihalek
-        valind.map do |ci|
-          jointrelentropy(self.slice(ci..ci).values, backdist)
-        end
+        @score = valind.map do |ci|
+                   jointrelentropy(self.slice(ci..ci).values, backdist)
+                 end
       end
 
     end

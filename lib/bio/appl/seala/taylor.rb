@@ -73,16 +73,17 @@ module Bio
         )
 
       def taylor86
-        self.valind.map do |ci|
-          obs = self.slice(ci..ci).values.uniq.
-                reject{ |i| !Alphabet.member? i}.join
-          memberof = Taylorsets.find_all{|i| i =~ /([#{obs}].*){#{obs.size}}/}
-          if memberof.size>0
-            memberof.map{|i| i.size}.min
-          else
-            20
+        @score =
+          valind.map do |ci|
+            obs = self.slice(ci..ci).values.uniq.
+                  reject{ |i| !Alphabet.member? i}.join
+            memberof = Taylorsets.find_all{|i| i =~ /([#{obs}].*){#{obs.size}}/}
+            if memberof.size>0
+              memberof.map{|i| i.size}.min
+            else
+              20
+            end
           end
-        end
       end
 
     end
