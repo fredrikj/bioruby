@@ -6,7 +6,7 @@ require 'matrix'
 class Blosum < Hash
   attr_reader :keys
   def initialize(arg)
-    @keys, *values = arg.grep(/^[^#]/).map{|i| i.split}
+    @keys, *values = arg.lines.grep(/^[^#]/).map{|i| i.split}
     @ndec = (values[0][1]=~/\.(\d*)/) ? $1.size : 0
     @keys.each_with_index do |key,i|
       self[key] = 
