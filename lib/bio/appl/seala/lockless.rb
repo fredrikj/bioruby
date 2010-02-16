@@ -30,16 +30,16 @@ class Integer
     unless p.is_a? Rational
       raise "Oh no you don't. Second argument must be a Rational." 
     end
-    pnum = p.numerator.primes * self
-    pden = p.denominator.primes * self
-    p2num = (1-p).numerator.primes * (n-self)
-    p2den = (1-p).denominator.primes * (n-self)
+    pnum = p.numerator.primefactors * self
+    pden = p.denominator.primefactors * self
+    p2num = (1-p).numerator.primefactors * (n-self)
+    p2den = (1-p).denominator.primefactors * (n-self)
     numer = 
-      (1..n).map{|i| i.primes}.flatten +
+      (1..n).map{|i| i.primefactors}.flatten +
       pnum + p2num
     denom = 
-      (1..self).map{|i| i.primes}.flatten +
-      (1..n-self).map{|i| i.primes}.flatten +
+      (1..self).map{|i| i.primefactors}.flatten +
+      (1..n-self).map{|i| i.primefactors}.flatten +
       pden + p2den
     numer.delete(1)
     numer.sort!
@@ -72,21 +72,10 @@ class Integer
     end
   end
 
-  def primes
-    return [1] if self==1
-    p = Prime.new
-    n = self
-    div = p.succ
-    arr = []
-    while n>1 do
-      if (tmp = n / div).is_a? Fixnum
-        n = tmp
-        arr << div
-      else
-        div = p.succ
-      end
-    end
-    arr
+  def primefactors
+    return [] if self == 1
+    factor = (2..self).find {|x| self % x == 0} 
+    [ factor ] + (self / factor).primefactors
   end
 
 end
