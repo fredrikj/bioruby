@@ -30,7 +30,7 @@ module Bio
         @score =
           valind.map do |ci|
             originalcolumn = self.slice(ci..ci).values
-            column = originalcolumn.reject{|i| i=~/[.BXZ]/}
+            column = originalcolumn.reject{|i| i=~/[\.\-BXZ]/}
             if column.size*2 < originalcolumn.size
               'nan'
             else
